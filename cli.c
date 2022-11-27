@@ -153,7 +153,9 @@ int main(int argc, char *argv[])
 			perror("chdir");
 			return 1;
 		}
-		execl("/bin/sh", "/bin/sh", "-c", argv[3], NULL);
+		execl("/bin/bash", "/bin/bash", "-c", argv[3], NULL);
+		perror("execl");
+		return 1;
 	}
 	if (strcmp(argv[1], "bg") == 0) {
 		if (argc != 4) {
@@ -170,7 +172,9 @@ int main(int argc, char *argv[])
 		if (fork() == 0) {
 			if (chroot(mountpoint) != 0) _exit(1);
 			if (chdir("/") != 0) _exit(1);
-			execl("/bin/sh", "/bin/sh", "-c", argv[3], NULL);
+			execl("/bin/bash", "/bin/bash", "-c", argv[3], NULL);
+			perror("execl");
+			_exit(1);
 		}
 		return 0;
 	}
