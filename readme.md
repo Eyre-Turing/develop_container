@@ -16,17 +16,17 @@ sudo ./serv	# 开启容器管理服务
 
 ```bash
 sudo ./cli ps			# 查看有哪些正在运行的容器
-sudo ./cli run <容器镜像>	# 运行容器
-sudo ./cli stop <容器id>	# 停止容器，其中容器id可以在./cli ps查
+sudo ./cli run <容器镜像>	# 运行容器，其中<容器镜像>必须为全路径，容器镜像生成方法见下一节
+sudo ./cli stop <容器id>	# 停止容器，其中<容器id>可以在./cli ps查
 sudo ./cli off			# 结束容器管理服务
-sudo ./cli fg <容器id> <命令>	# 进入指定容器，并且执行<命令>。如果只要进入容器，请传入<命令>为/bin/sh
+sudo ./cli fg <容器id> <命令>	# 进入指定容器，并且执行<命令>。如果只要进入容器，请传入<命令>为/bin/bash
 sudo ./cli bg <容器id> <命令>	# 在指定容器后台执行命令
 ```
 
 # 怎么生成容器镜像
 
 ```bash
-sudo ./mkimg.sh <生成的镜像文件名> <大小(单位为M)>
+sudo ./mkimg.sh <生成的镜像文件名> [大小(单位为M, 默认为200)]
 ```
 
 # 使用到的工具

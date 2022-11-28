@@ -1,9 +1,19 @@
 #!/bin/bash
 
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+	cat >&2 << EOF
+must spec create image name!
+Usage:
+  $0 <image_name> [image_size(unit: M, default 200)]
+EOF
+	echo "failed"
+	exit 1
+fi
+
 self_path=$(dirname "$(realpath "$0")")
 
-image_path=${1:-$(mktemp ./img.XXXXXX)}
-image_size=${2:-100}	# 大小，单位为M
+image_path=$1
+image_size=${2:-200}	# 大小，单位为M
 
 self_pwd=$(realpath "$(pwd)")
 

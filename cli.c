@@ -14,13 +14,13 @@
 void print_usage(const char *self_name)
 {
 	fprintf(stdout, "Usage:\n"
-		"	%s help\n"
-		"	%s off\n"
-		"	%s ps\n"
-		"	%s run <image_path>\n"
-		"	%s stop <id>\n"
-		"	%s fg <id> <shell_cmd>\n"
-		"	%s bg <id> <shell_cmd>\n",
+		"  %s help                  show this message and exit.\n"
+		"  %s off                   close the container\'s daemon service.\n"
+		"  %s ps                    show all running container.\n"
+		"  %s run <image_path>      run a container, <image_path> must be full path.\n"
+		"  %s stop <id>             stop a running container.\n"
+		"  %s fg <id> <shell_cmd>   exec a <shell_cmd> in front office.\n"
+		"  %s bg <id> <shell_cmd>   exec a <shell_cmd> in background.\n",
 		self_name, self_name, self_name, self_name, self_name, self_name, self_name);
 }
 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	if (strcmp(argv[1], "fg") == 0) {
-		if (argc != 4) {
+		if (argc < 4) {
 			fprintf(stderr, "param error\n");
 			close(sockfd);
 			return 1;
@@ -153,12 +153,12 @@ int main(int argc, char *argv[])
 			perror("chdir");
 			return 1;
 		}
-		execl("/bin/bash", "/bin/bash", "-c", argv[3], NULL);
-		perror("execl");
+		execvp(argv[3], argv + 3);
+		perror("execvp");
 		return 1;
 	}
 	if (strcmp(argv[1], "bg") == 0) {
-		if (argc != 4) {
+		if (argc < 4) {
 			fprintf(stderr, "param error\n");
 			close(sockfd);
 			return 1;
@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
 		if (fork() == 0) {
 			if (chroot(mountpoint) != 0) _exit(1);
 			if (chdir("/") != 0) _exit(1);
-			execl("/bin/bash", "/bin/bash", "-c", argv[3], NULL);
-			perror("execl");
+			execvp(argv[3], argv + 3);
+			perror("execvp");
 			_exit(1);
 		}
 		return 0;

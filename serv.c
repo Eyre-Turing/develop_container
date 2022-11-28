@@ -26,6 +26,21 @@ struct container_list_t {
 
 /*
  * result:
+ * 0 do not off
+ * 1 off
+ */
+int do_off(int sockfd)
+{
+	if (container_list.next) {
+		send(sockfd, "failed\nhas container running\n", 29, 0);
+		return 0;
+	}
+	send(sockfd, "ok\n", 3, 0);
+	return 1;
+}
+
+/*
+ * result:
  * 0 ok
  * 1 no such image
  * 2 mount failed
@@ -35,6 +50,7 @@ int mount_container(const char *image_path, char *mountpoint)
 	char shell_cmd[1024];
 	FILE *fp;
 	int n;
+	pid_t pid;
 	if (access(image_path, F_OK) != 0) return 1;
 	sprintf(shell_cmd, "mktemp -d");
 	fp = popen(shell_cmd, "r");
@@ -43,10 +59,15 @@ int mount_container(const char *image_path, char *mountpoint)
 	if (pclose(fp) != 0) return 2;
 	mountpoint[n] = 0;
 	strtok(mountpoint, "\n");
-	sprintf(shell_cmd, "mount \"%s\" \"%s\"", image_path, mountpoint);
-	fp = popen(shell_cmd, "r");
-	if (fp == NULL) return 2;
-	if (pclose(fp) != 0) return 2;
+	pid = fork();
+	if (pid < 0) return 2;
+	if (pid == 0) {
+		execlp("mount", "mount", image_path, mountpoint, NULL);
+		perror("execlp");
+		_exit(1);
+	}
+	waitpid(pid, &n, 0);
+	if (n != 0) return 2;
 	return 0;
 }
 
@@ -57,16 +78,26 @@ int mount_container(const char *image_path, char *mountpoint)
  * */
 int umount_container(const char *mountpoint)
 {
-	char shell_cmd[1024];
-	FILE *fp;
 	int n;
-	sprintf(shell_cmd, "umount \"%s\"", mountpoint);
-	fp = popen(shell_cmd, "r");
-	if (fp == NULL) return 1;
-	if (pclose(fp) != 0) return 1;
-	sprintf(shell_cmd, "rm -rf \"%s\"", mountpoint);
-	fp = popen(shell_cmd, "r");
-	if (fp) pclose(fp);
+	pid_t pid;
+	pid = fork();
+	if (pid < 0) return 1;
+	if (pid == 0) {
+		execlp("umount", "umount", mountpoint, NULL);
+		perror("execlp");
+		_exit(1);
+	}
+	waitpid(pid, &n, 0);
+	if (n != 0) return 1;
+	pid = fork();
+	if (pid < 0) return 1;
+	if (pid == 0) {
+		execlp("rm", "rm", "-rf", mountpoint, NULL);
+		perror("execlp");
+		_exit(1);
+	}
+	waitpid(pid, &n, 0);
+	if (n != 0) return 1;
 	return 0;
 }
 
@@ -165,8 +196,11 @@ void do_info_container(int sockfd)
  * ----stop service-----
  * >>> request
  * off
- * >>> reponse
+ * >>> succeed reponse
  * ok
+ * >>> failed reponse
+ * failed
+ * <message>
  * ---------------------
  * 
  * ----run container----
@@ -221,8 +255,7 @@ int do_cli_cmd(int sockfd, char *cmd)
 	line = strtok(cmd, "\n");
 	if (line) {
 		if (strcmp(line, "off") == 0) {
-			send(sockfd, "ok\n", 3, 0);
-			return 1;
+			return do_off(sockfd);
 		} else if (strcmp(line, "run") == 0) {
 			do_run_container(sockfd);
 		} else if (strcmp(line, "stop") == 0) {
